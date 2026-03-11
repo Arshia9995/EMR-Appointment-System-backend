@@ -36,9 +36,9 @@ app.get("/", (req,res)=>{
     res.send("backend is running...");
 });
 
-server.listen(process.env.PORT, () => {
-    console.log(`server is running on http://localhost:${process.env.PORT}`);
+// server.listen(process.env.PORT, () => {
+//     console.log(`server is running on http://localhost:${process.env.PORT}`);
     
-})
+// })
 
 export default app;
