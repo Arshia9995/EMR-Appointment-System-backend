@@ -13,6 +13,7 @@ import {
   deleteAppointment,
   getAdminDashboardStats,
 } from "../controllers/doctorController";
+import { getAuditLogs } from "../controllers/auditController";
 import {
   blockReceptionist,
   createReceptionist,
@@ -82,6 +83,14 @@ router.get(
   verifyToken,
   authorizeRoles("super_admin"),
   getAdminDashboardStats
+);
+
+// Audit logs
+router.get(
+  "/audit-logs",
+  verifyToken,
+  authorizeRoles("super_admin"),
+  getAuditLogs
 );
 
 // Patient search (admin + receptionist)

@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import Doctor from "../models/Doctor";
 import Appointment from "../models/Appointment";
 import Patient from "../models/Patient";
+import { logAudit } from "../utils/auditLogger";
 import { generateAccessToken, generateRefreshToken } from "../utils/generateToken";
 
 // Helper to combine date + time
@@ -303,6 +304,19 @@ export const bookAppointment = async (req: Request, res: Response) => {
         createdByRole: user.role,
       });
 
+      await logAudit({
+        userId: user.userId,
+        role: user.role,
+        action: "APPOINTMENT_BOOKED",
+        entityType: "Appointment",
+        entityId: appointment._id.toString(),
+        metadata: {
+          doctorId: doctor._id.toString(),
+          patientName: resolvedName,
+          startTime: slotStart,
+        },
+      });
+
       return res.status(201).json({ success: true, data: appointment });
     } catch (err: any) {
       if (err.code === 11000) {
@@ -406,6 +420,16 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
+    const userInfo = (req as any).user as { userId?: string; role?: string } | undefined;
+    await logAudit({
+      userId: userInfo?.userId,
+      role: userInfo?.role,
+      action: "APPOINTMENT_STATUS_CHANGED",
+      entityType: "Appointment",
+      entityId: id as string,
+      metadata: { status },
+    });
+
     return res.status(200).json({ success: true, data: appointment });
   } catch (error) {
     console.error(error);
@@ -444,6 +468,15 @@ export const updateAppointment = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
+    const userInfo = (req as any).user as { userId?: string; role?: string } | undefined;
+    await logAudit({
+      userId: userInfo?.userId,
+      role: userInfo?.role,
+      action: "APPOINTMENT_UPDATED",
+      entityType: "Appointment",
+      entityId: id as string,
+    });
+
     return res.status(200).json({ success: true, data: appointment });
   } catch (error) {
     console.error(error);
@@ -459,6 +492,15 @@ export const deleteAppointment = async (req: Request, res: Response) => {
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
     }
+
+    const userInfo = (req as any).user as { userId?: string; role?: string } | undefined;
+    await logAudit({
+      userId: userInfo?.userId,
+      role: userInfo?.role,
+      action: "APPOINTMENT_DELETED",
+      entityType: "Appointment",
+      entityId: id as string,
+    });
 
     return res.status(200).json({ success: true, message: "Appointment deleted" });
   } catch (error) {

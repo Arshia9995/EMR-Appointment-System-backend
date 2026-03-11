@@ -7,6 +7,7 @@ import {
 } from "../utils/generateToken";
 import jwt from "jsonwebtoken";
 import Doctor from "../models/Doctor";
+import { logAudit } from "../utils/auditLogger";
 
 export const loginUser = async (req: Request, res: Response) => {
   try {
@@ -23,6 +24,10 @@ export const loginUser = async (req: Request, res: Response) => {
       const doctor = await Doctor.findOne({ email });
 
       if (!doctor) {
+        await logAudit({
+          action: "LOGIN_FAILED",
+          metadata: { email },
+        });
         return res.status(400).json({
           message: "Invalid email or password",
         });
@@ -33,6 +38,12 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     if (user.isBlocked) {
+      await logAudit({
+        userId: user._id.toString(),
+        role,
+        action: "LOGIN_BLOCKED",
+        metadata: { email },
+      });
       return res.status(403).json({
         message: "Your account is blocked",
       });
@@ -41,6 +52,12 @@ export const loginUser = async (req: Request, res: Response) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
+      await logAudit({
+        userId: user._id.toString(),
+        role,
+        action: "LOGIN_FAILED",
+        metadata: { email },
+      });
       return res.status(400).json({
         message: "Invalid email or password",
       });
@@ -63,6 +80,13 @@ export const loginUser = async (req: Request, res: Response) => {
       secure: false,
       sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    await logAudit({
+      userId: user._id.toString(),
+      role,
+      action: "LOGIN_SUCCESS",
+      metadata: { email },
     });
 
     return res.status(200).json({
@@ -118,6 +142,8 @@ export const refreshAccessToken = (req: Request, res: Response) => {
 };
 
 export const logoutUser = (req: Request, res: Response) => {
+  const user = (req as any).user as { userId: string; role: string } | undefined;
+
   res.clearCookie("accessToken", {
     httpOnly: true,
     secure: false,
@@ -128,6 +154,14 @@ export const logoutUser = (req: Request, res: Response) => {
     secure: false,
     sameSite: "strict",
   });
+
+  if (user?.userId) {
+    logAudit({
+      userId: user.userId,
+      role: user.role,
+      action: "LOGOUT",
+    });
+  }
 
   return res.status(200).json({
     success: true,
