@@ -90,3 +90,6 @@ http://localhost:5000
 - Role-based authorization
 
 
+## API Documentation
+
+Detailed API documentation is available in the API.md file in this repository.
