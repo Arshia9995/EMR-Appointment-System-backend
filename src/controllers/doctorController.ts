@@ -5,6 +5,8 @@ import Appointment from "../models/Appointment";
 import Patient from "../models/Patient";
 import { logAudit } from "../utils/auditLogger";
 import { generateAccessToken, generateRefreshToken } from "../utils/generateToken";
+import department from "../models/department";
+import { log } from "node:console";
 
 // Helper to combine date + time
 const combineDateTime = (dateStr: string, timeStr: string) => {
@@ -613,4 +615,35 @@ export const getAdminDashboardStats = async (req: Request, res: Response) => {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
   }
+};
+
+
+
+
+ export const addDepartment = async (req: Request, res: Response) => {
+  try {
+
+    console.log("reachedd");
+    
+    const { name } = req.body;
+
+    const existing = await department.findOne({ name });
+    if (existing) {
+      return res.status(400).json({ message: "Department already exists" });
+    }
+
+    const dept = await department.create({ name });
+    res.json(dept);
+  } catch (err: any) {
+
+    console.error("error", err)
+    
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+export const getDepartments = async (req: Request, res: Response) => {
+  const depts = await department.find();
+  res.json({ success: true, data: depts });
 };

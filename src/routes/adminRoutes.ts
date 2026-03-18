@@ -12,6 +12,8 @@ import {
   updateAppointment,
   deleteAppointment,
   getAdminDashboardStats,
+  addDepartment,
+  getDepartments,
 } from "../controllers/doctorController";
 import { getAuditLogs } from "../controllers/auditController";
 import {
@@ -160,4 +162,12 @@ router.put(
   blockReceptionist
 );
 
+router.post(
+  "/add-department",
+  verifyToken,
+  authorizeRoles("super_admin"),
+  addDepartment
+)
+
+router.get("/departments", verifyToken, authorizeRoles("super_admin"), getDepartments);
 export default router;
